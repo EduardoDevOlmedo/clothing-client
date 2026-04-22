@@ -262,6 +262,9 @@ export default function DashboardPage() {
       const payload = {
         ...newDrop,
         gastosPublicidad: Number(newDrop.gastosPublicidad) || 0,
+        fechaPublicacion: newDrop.fechaPublicacion
+          ? new Date(newDrop.fechaPublicacion + "T12:00:00").toISOString()
+          : null,
       };
       const { data } = await api.post("/drops", payload);
       setNewDropOpen(false);
@@ -469,7 +472,9 @@ export default function DashboardPage() {
                 <CardContent>
                   <Typography variant="body2">Fecha de publicación</Typography>
                   <Typography variant="body1">
-                    {new Date(dropDraft.fechaPublicacion).toLocaleDateString()}
+                    {new Date(
+                      dropDraft.fechaPublicacion + "T12:00:00",
+                    ).toLocaleDateString()}
                   </Typography>
                 </CardContent>
               </Card>
@@ -510,7 +515,9 @@ export default function DashboardPage() {
                     color: (theme) => theme.palette.grey[800],
                   },
                 }}
-                onClick={() => setFilters({ tipo: "", nombre: "", estadoVenta: "" })}
+                onClick={() =>
+                  setFilters({ tipo: "", nombre: "", estadoVenta: "" })
+                }
               >
                 <ClearIcon />
               </IconButton>
@@ -528,10 +535,6 @@ export default function DashboardPage() {
           ) : prendasDraft.length === 0 ? (
             <Box sx={{ p: 4, textAlign: "center", color: "text.secondary" }}>
               Este drop no tiene prendas.
-            </Box>
-          ) : sorted.length === 0 ? (
-            <Box sx={{ p: 4, textAlign: "center", color: "text.secondary" }}>
-              Ninguna prenda coincide con los filtros.
             </Box>
           ) : (
             <>
@@ -719,10 +722,9 @@ export default function DashboardPage() {
               label="Fecha publicacion"
               type="date"
               value={newDrop.fechaPublicacion}
-              onChange={(e) => {
-                const v = e.target.value;
-                setNewDrop({ ...newDrop, fechaPublicacion: v });
-              }}
+              onChange={(e) =>
+                setNewDrop({ ...newDrop, fechaPublicacion: e.target.value })
+              }
               InputLabelProps={{ shrink: true }}
               required
               fullWidth
