@@ -69,7 +69,9 @@ const PRENDA_FIELDS = [
 function toDateInput(v) {
   if (!v) return "";
   const d = new Date(v);
-  return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 10);
+  return new Date(d.getTime() - d.getTimezoneOffset() * 60000)
+    .toISOString()
+    .slice(0, 10);
 }
 
 function diff(original, current, fields) {
@@ -637,13 +639,6 @@ export default function DashboardPage() {
               value={newDrop.fechaPublicacion}
               onChange={(e) => {
                 const v = e.target.value;
-                if (v && new Date(v) < new Date()) {
-                  setToast({
-                    severity: "error",
-                    msg: "La fecha de publicación no puede ser en el futuro",
-                  });
-                  return;
-                }
                 setNewDrop({ ...newDrop, fechaPublicacion: v });
               }}
               InputLabelProps={{ shrink: true }}
