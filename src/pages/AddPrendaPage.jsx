@@ -17,6 +17,8 @@ import {
 import api from "../api.js";
 import Nav from "../components/Nav.jsx";
 
+const ESTADOS_VENTA = ["disponible", "vendido", "reservado"];
+
 const TIPOS = [
   "blusa",
   "falda",
@@ -38,7 +40,8 @@ export default function AddPrendaPage() {
     talla: "",
     precioCompra: "",
     precioVenta: "",
-    estadoFisico: "nuevo",
+    estadoVenta: "disponible",
+    estadoFisico: "usado",
   });
   const [toast, setToast] = useState(null);
   const [saving, setSaving] = useState(false);
@@ -61,7 +64,9 @@ export default function AddPrendaPage() {
     try {
       await api.post("/prendas", {
         ...form,
-        fechaCompra: new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString(),
+        fechaCompra: new Date(
+          Date.now() - new Date().getTimezoneOffset() * 60000,
+        ).toISOString(),
         precioCompra: Number(form.precioCompra),
         precioVenta: Number(form.precioVenta),
       });
@@ -157,6 +162,21 @@ export default function AddPrendaPage() {
                   fullWidth
                 />
               </Stack>
+
+              <FormControl required>
+                <InputLabel>Disponibilidad</InputLabel>
+                <Select
+                  value={form.estadoVenta}
+                  label="Disponibilidad"
+                  onChange={(e) => set("estadoVenta", e.target.value)}
+                >
+                  {ESTADOS_VENTA.map((s) => (
+                    <MenuItem key={s} value={s}>
+                      {s}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
 
               <FormControl required>
                 <InputLabel>Estado fisico</InputLabel>

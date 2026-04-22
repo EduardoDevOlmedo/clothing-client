@@ -27,11 +27,13 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
-  Chip,
   Skeleton,
   IconButton,
+  Grid,
 } from "@mui/material";
 import DeleteIcon from "@mui/icons-material/Delete";
+import ClearIcon from "@mui/icons-material/Clear";
+import FilterListIcon from "@mui/icons-material/FilterList";
 import api from "../api.js";
 import Nav from "../components/Nav.jsx";
 
@@ -95,10 +97,10 @@ export default function DashboardPage() {
   const [prendasOriginal, setPrendasOriginal] = useState([]);
   const [prendasDraft, setPrendasDraft] = useState([]);
   const [stats, setStats] = useState(null);
-  const [sortBy, setSortBy] = useState("nombre");
-  const [sortDir, setSortDir] = useState("asc");
+  const [sortBy, setSortBy] = useState("createdAt");
+  const [sortDir, setSortDir] = useState("desc");
   const [page, setPage] = useState(0);
-  const [rowsPerPage, setRowsPerPage] = useState(25);
+  const [rowsPerPage, setRowsPerPage] = useState(15);
   const [saving, setSaving] = useState(false);
   const [toast, setToast] = useState(null);
   const [newDropOpen, setNewDropOpen] = useState(false);
@@ -109,6 +111,12 @@ export default function DashboardPage() {
     fechaPublicacion: "",
   });
   const [toDelete, setToDelete] = useState(null);
+  const [filterOpen, setFilterOpen] = useState(false);
+  const [filters, setFilters] = useState({
+    tipo: "",
+    nombre: "",
+    estadoVenta: "",
+  });
 
   async function deletePrenda(id) {
     try {
@@ -160,6 +168,9 @@ export default function DashboardPage() {
   useEffect(() => {
     loadDrop(selectedId);
   }, [selectedId]);
+  useEffect(() => {
+    setPage(0);
+  }, [filters]);
 
   const dropDirty =
     dropDraft && dropOriginal
@@ -218,7 +229,15 @@ export default function DashboardPage() {
           });
           return;
         }
-        await api.patch(`/prendas/${p._id}`, patch);
+
+        await api.patch(`/prendas/${p._id}`, {
+          ...patch,
+          fechaVenta: ventaDate
+            ? new Date(
+                ventaDate.getTime() + ventaDate.getTimezoneOffset() * 60000,
+              ).toISOString()
+            : null,
+        });
       }
       await loadDrop(selectedId);
       await loadDrops();
@@ -260,7 +279,20 @@ export default function DashboardPage() {
   }
 
   const sorted = useMemo(() => {
-    const arr = [...prendasDraft];
+    const nombreQ = filters.nombre.trim().toLowerCase();
+    const arr = prendasDraft.filter((p) => {
+      if (filters.tipo && p.tipo !== filters.tipo) return false;
+      if (filters.estadoVenta && p.estadoVenta !== filters.estadoVenta)
+        return false;
+      if (
+        nombreQ &&
+        !String(p.nombre ?? "")
+          .toLowerCase()
+          .includes(nombreQ)
+      )
+        return false;
+      return true;
+    });
     arr.sort((a, b) => {
       const av = a[sortBy] ?? "";
       const bv = b[sortBy] ?? "";
@@ -272,9 +304,14 @@ export default function DashboardPage() {
         : String(bv).localeCompare(String(av));
     });
     return arr;
-  }, [prendasDraft, sortBy, sortDir]);
+  }, [prendasDraft, sortBy, sortDir, filters]);
 
-  const showPagination = prendasDraft.length > 25;
+  const activeFilterCount =
+    (filters.tipo ? 1 : 0) +
+    (filters.nombre ? 1 : 0) +
+    (filters.estadoVenta ? 1 : 0);
+
+  const showPagination = sorted.length > 15;
   const paged = showPagination
     ? sorted.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
     : sorted;
@@ -440,6 +477,47 @@ export default function DashboardPage() {
           </Paper>
         )}
 
+        <Grid container sx={{ mb: 1, width: "100%" }}>
+          <Grid item xs={activeFilterCount > 0 ? 6 : 12}>
+            <IconButton
+              sx={{
+                color: "text.secondary",
+                width: "100%",
+                borderRadius: "0%",
+                backgroundColor: (theme) => theme.palette.primary.main,
+                color: (theme) => theme.palette.primary.contrastText,
+                "&:hover": {
+                  backgroundColor: (theme) => theme.palette.primary.dark,
+                  color: (theme) => theme.palette.primary.contrastText,
+                },
+              }}
+              onClick={() => setFilterOpen(true)}
+            >
+              <FilterListIcon />
+            </IconButton>
+          </Grid>
+          <Grid item xs={activeFilterCount > 0 ? 6 : 12}>
+            {activeFilterCount > 0 && (
+              <IconButton
+                sx={{
+                  color: "text.secondary",
+                  width: "100%",
+                  borderRadius: "0%",
+                  backgroundColor: (theme) => theme.palette.grey[200],
+                  color: (theme) => theme.palette.grey[800],
+                  "&:hover": {
+                    backgroundColor: (theme) => theme.palette.grey[300],
+                    color: (theme) => theme.palette.grey[800],
+                  },
+                }}
+                onClick={() => setFilters({ tipo: "", nombre: "", estadoVenta: "" })}
+              >
+                <ClearIcon />
+              </IconButton>
+            )}
+          </Grid>
+        </Grid>
+
         <Paper sx={{ overflowX: "auto" }}>
           {loading ? (
             <Box sx={{ p: 2 }}>
@@ -450,6 +528,10 @@ export default function DashboardPage() {
           ) : prendasDraft.length === 0 ? (
             <Box sx={{ p: 4, textAlign: "center", color: "text.secondary" }}>
               Este drop no tiene prendas.
+            </Box>
+          ) : sorted.length === 0 ? (
+            <Box sx={{ p: 4, textAlign: "center", color: "text.secondary" }}>
+              Ninguna prenda coincide con los filtros.
             </Box>
           ) : (
             <>
@@ -557,7 +639,7 @@ export default function DashboardPage() {
                     setRowsPerPage(+e.target.value);
                     setPage(0);
                   }}
-                  rowsPerPageOptions={[25, 50, 100]}
+                  rowsPerPageOptions={[15, 30, 50, 100]}
                 />
               )}
             </>
@@ -655,6 +737,79 @@ export default function DashboardPage() {
             disabled={!newDrop.nombre || !newDrop.fechaPublicacion}
           >
             Crear
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      <Dialog
+        open={filterOpen}
+        onClose={() => setFilterOpen(false)}
+        fullWidth
+        maxWidth="xs"
+      >
+        <DialogTitle>Filtros</DialogTitle>
+        <DialogContent>
+          <Stack spacing={2} sx={{ mt: 1 }}>
+            <TextField
+              label="Nombre"
+              value={filters.nombre}
+              onChange={(e) =>
+                setFilters({ ...filters, nombre: e.target.value })
+              }
+              fullWidth
+              autoFocus
+            />
+            <FormControl fullWidth>
+              <InputLabel>Tipo</InputLabel>
+              <Select
+                label="Tipo"
+                value={filters.tipo}
+                onChange={(e) =>
+                  setFilters({ ...filters, tipo: e.target.value })
+                }
+              >
+                <MenuItem value="">Todos</MenuItem>
+                {TIPOS.map((t) => (
+                  <MenuItem key={t} value={t}>
+                    {t}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+            <FormControl fullWidth>
+              <InputLabel>Disponibilidad</InputLabel>
+              <Select
+                label="Disponibilidad"
+                value={filters.estadoVenta}
+                onChange={(e) =>
+                  setFilters({ ...filters, estadoVenta: e.target.value })
+                }
+              >
+                <MenuItem value="">Todas</MenuItem>
+                {ESTADOS_VENTA.map((t) => (
+                  <MenuItem key={t} value={t}>
+                    {t}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          </Stack>
+        </DialogContent>
+        <DialogActions>
+          <Button
+            onClick={() =>
+              setFilters({ tipo: "", nombre: "", estadoVenta: "" })
+            }
+            disabled={activeFilterCount === 0}
+          >
+            Limpiar
+          </Button>
+          <Button
+            variant="contained"
+            onClick={() => setFilterOpen(false)}
+            disabled={activeFilterCount === 0}
+          >
+            Aplicar
           </Button>
         </DialogActions>
       </Dialog>
