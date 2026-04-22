@@ -48,7 +48,12 @@ const TIPOS = [
 const ESTADOS_FISICO = ["nuevo", "usado", "con detalle"];
 const ESTADOS_VENTA = ["disponible", "vendido", "reservado"];
 
-const DROP_FIELDS = ["nombre", "descripcion", "fechaPublicacion", "gastosPublicidad"];
+const DROP_FIELDS = [
+  "nombre",
+  "descripcion",
+  "fechaPublicacion",
+  "gastosPublicidad",
+];
 const PRENDA_FIELDS = [
   "nombre",
   "tipo",
@@ -63,7 +68,8 @@ const PRENDA_FIELDS = [
 
 function toDateInput(v) {
   if (!v) return "";
-  return new Date(v).toISOString().slice(0, 10);
+  const d = new Date(v);
+  return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 10);
 }
 
 function diff(original, current, fields) {
@@ -184,6 +190,32 @@ export default function DashboardPage() {
       const origMap = new Map(prendasOriginal.map((p) => [p._id, p]));
       for (const p of dirtyPrendas) {
         const patch = diff(origMap.get(p._id), p, PRENDA_FIELDS);
+        if (patch.fechaVenta && new Date(patch.fechaVenta) > new Date()) {
+          setToast({
+            severity: "error",
+            msg: "La fecha de venta no puede ser en el futuro",
+          });
+          return;
+        }
+        if (patch.fechaCompra && new Date(patch.fechaCompra) > new Date()) {
+          setToast({
+            severity: "error",
+            msg: "La fecha de compra no puede ser en el futuro",
+          });
+          return;
+        }
+
+        const venta = patch.fechaVenta ?? p.fechaVenta;
+        const compra = patch.fechaCompra ?? p.fechaCompra;
+        const ventaDate = venta ? new Date(venta) : null;
+        const compraDate = compra ? new Date(compra) : null;
+        if (ventaDate && compraDate && ventaDate < compraDate) {
+          setToast({
+            severity: "error",
+            msg: "La fecha de venta no puede ser antes de la fecha de compra",
+          });
+          return;
+        }
         await api.patch(`/prendas/${p._id}`, patch);
       }
       await loadDrop(selectedId);
@@ -212,7 +244,12 @@ export default function DashboardPage() {
       };
       const { data } = await api.post("/drops", payload);
       setNewDropOpen(false);
-      setNewDrop({ nombre: "", descripcion: "", fechaPublicacion: "", gastosPublicidad: "" });
+      setNewDrop({
+        nombre: "",
+        descripcion: "",
+        fechaPublicacion: "",
+        gastosPublicidad: "",
+      });
       await loadDrops();
       setSelectedId(data._id);
     } catch (e) {
@@ -241,7 +278,7 @@ export default function DashboardPage() {
     : sorted;
 
   const columns = [
-    { key: "nombre", label: "Nombre", kind: "text", width: '256px' },
+    { key: "nombre", label: "Nombre", kind: "text", width: "256px" },
     { key: "tipo", label: "Tipo", kind: "select", opts: TIPOS },
     { key: "talla", label: "Talla", kind: "text" },
     { key: "precioCompra", label: "Compra", kind: "number" },
@@ -272,13 +309,15 @@ export default function DashboardPage() {
 
   return (
     <>
-      <Nav onNewDrop={() => {
-        if(location.pathname === '/') {
-          setNewDropOpen(true);
-        } else {
-          navigate(`/`);
-        }
-      }} />
+      <Nav
+        onNewDrop={() => {
+          if (location.pathname === "/") {
+            setNewDropOpen(true);
+          } else {
+            navigate(`/`);
+          }
+        }}
+      />
       <Container maxWidth="xl" sx={{ py: 3, pb: 12 }}>
         <Stack
           direction={{ xs: "column", md: "column" }}
@@ -286,7 +325,7 @@ export default function DashboardPage() {
           sx={{ mb: 2 }}
           alignItems="flex-start"
         >
-          <FormControl sx={{ width: '100%' }}>
+          <FormControl sx={{ width: "100%" }}>
             <InputLabel>Drop</InputLabel>
             <Select
               value={selectedId}
@@ -305,14 +344,14 @@ export default function DashboardPage() {
           </FormControl>
 
           {stats && (
-            <Card sx={{ width: '100%' }}>
+            <Card sx={{ width: "100%" }}>
               <CardContent>
                 <Typography variant="overline" color="text.secondary">
                   Resumen del drop
                 </Typography>
                 <Stack
-                  direction="row"
-                  spacing={4}
+                  direction={{ xs: "column", md: "row" }}
+                  spacing={{ xs: 1, md: 4 }}
                   flex={1}
                 >
                   <Box>
@@ -357,7 +396,9 @@ export default function DashboardPage() {
                     <Typography variant="caption" color="text.secondary">
                       Gastos de publicidad
                     </Typography>
-                    <Typography variant="h6">${stats.gastosPublicidad || 0}</Typography>
+                    <Typography variant="h6">
+                      ${stats.gastosPublicidad || 0}
+                    </Typography>
                   </Box>
                 </Stack>
               </CardContent>
@@ -452,7 +493,7 @@ export default function DashboardPage() {
                             </Select>
                           ) : (
                             <TextField
-                              style={{ width: c.width || 'auto' }}
+                              style={{ width: c.width || "auto" }}
                               variant="filled"
                               type={
                                 c.kind === "number"
@@ -469,6 +510,7 @@ export default function DashboardPage() {
                                       ? ""
                                       : Number(e.target.value)
                                     : e.target.value;
+
                                 updatePrenda(p._id, c.key, v);
                               }}
                               disabled={
@@ -572,7 +614,7 @@ export default function DashboardPage() {
               fullWidth
               autoFocus
             />
-               <TextField
+            <TextField
               label="Gastos de publicidad"
               type="number"
               value={newDrop.gastosPublicidad}
@@ -593,9 +635,17 @@ export default function DashboardPage() {
               label="Fecha publicacion"
               type="date"
               value={newDrop.fechaPublicacion}
-              onChange={(e) =>
-                setNewDrop({ ...newDrop, fechaPublicacion: e.target.value })
-              }
+              onChange={(e) => {
+                const v = e.target.value;
+                if (v && new Date(v) < new Date()) {
+                  setToast({
+                    severity: "error",
+                    msg: "La fecha de publicación no puede ser en el futuro",
+                  });
+                  return;
+                }
+                setNewDrop({ ...newDrop, fechaPublicacion: v });
+              }}
               InputLabelProps={{ shrink: true }}
               required
               fullWidth
@@ -623,9 +673,8 @@ export default function DashboardPage() {
         <DialogTitle>Eliminar prenda</DialogTitle>
         <DialogContent>
           <Typography>
-            ¿Seguro que quieres eliminar{" "}
-            <strong>{toDelete?.nombre}</strong>? Esta accion no se puede
-            deshacer.
+            ¿Seguro que quieres eliminar <strong>{toDelete?.nombre}</strong>?
+            Esta accion no se puede deshacer.
           </Typography>
         </DialogContent>
         <DialogActions>
