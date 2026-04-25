@@ -12,6 +12,7 @@ import ReactECharts from "echarts-for-react";
 import api from "../api.js";
 import Nav from "../components/Nav.jsx";
 import { useNavigate } from "react-router-dom";
+import { formatNumberToCurrency } from "../utils/utils.ts";
 
 export default function Summarize() {
   const [drops, setDrops] = useState([]);
@@ -52,7 +53,11 @@ export default function Summarize() {
   }, [drops]);
 
   const pieOption = {
-    tooltip: { trigger: "item", formatter: "{b}: ${c} ({d}%)" },
+    tooltip: {
+      trigger: "item",
+      formatter: ({ name, value, percent }) =>
+        `${name}: ${formatNumberToCurrency(value)} (${percent}%)`,
+    },
     legend: { bottom: 0 },
     series: [
       {
@@ -61,7 +66,11 @@ export default function Summarize() {
         radius: ["40%", "70%"],
         avoidLabelOverlap: true,
         itemStyle: { borderRadius: 6, borderColor: "#fff", borderWidth: 2 },
-        label: { show: true, formatter: "{b}\n${c}" },
+        label: {
+          show: true,
+          formatter: ({ name, value }) =>
+            `${name}\n${formatNumberToCurrency(value)}`,
+        },
         data: [
           {
             value: totals.gastado,
@@ -117,7 +126,10 @@ export default function Summarize() {
                     <Typography variant="body1">
                       {bestDrop.nombre} -{" "}
                       {new Date(bestDrop.fechaPublicacion).toLocaleDateString()}
-                      : <br /> <b>${bestDrop.stats?.totalGanado}</b>
+                      : <br />{" "}
+                      <b>
+                        {formatNumberToCurrency(bestDrop.stats?.totalGanado)}
+                      </b>
                     </Typography>
                   </CardContent>
                 </Card>
@@ -128,7 +140,7 @@ export default function Summarize() {
                     Total gastado
                   </Typography>
                   <Typography variant="h4" color="error.main">
-                    ${totals.gastado}
+                    {formatNumberToCurrency(totals.gastado)}
                   </Typography>
                   <Typography variant="caption" color="text.secondary">
                     Costo de prendas vendidas
@@ -141,7 +153,7 @@ export default function Summarize() {
                     Total ganado
                   </Typography>
                   <Typography variant="h4" color="success.main">
-                    ${totals.ganado}
+                    {formatNumberToCurrency(totals.ganado)}
                   </Typography>
                   <Typography variant="caption" color="text.secondary">
                     Utilidad neta
@@ -154,7 +166,7 @@ export default function Summarize() {
                     Total gastado en publicidad
                   </Typography>
                   <Typography variant="h4" color="warning.main">
-                    ${totals.gastadoEnPublicidad}
+                    {formatNumberToCurrency(totals.gastadoEnPublicidad)}
                   </Typography>
                   <Typography variant="caption" color="text.secondary">
                     Gastos de publicidad
@@ -166,7 +178,8 @@ export default function Summarize() {
             <Card>
               <CardContent>
                 <Typography variant="overline" color="text.secondary">
-                  Distribucion de ingresos (${totals.vendido} total vendido)
+                  Distribucion de ingresos (
+                  {formatNumberToCurrency(totals.vendido)} total vendido)
                 </Typography>
                 <Box sx={{ height: 360 }}>
                   <ReactECharts

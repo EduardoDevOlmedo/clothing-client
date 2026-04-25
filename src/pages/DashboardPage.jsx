@@ -36,6 +36,7 @@ import ClearIcon from "@mui/icons-material/Clear";
 import FilterListIcon from "@mui/icons-material/FilterList";
 import api from "../api.js";
 import Nav from "../components/Nav.jsx";
+import { formatNumberToCurrency } from "../utils/utils.ts";
 
 const TIPOS = [
   "blusa",
@@ -401,14 +402,16 @@ export default function DashboardPage() {
                       Ganancia
                     </Typography>
                     <Typography variant="h6" color="success.main">
-                      ${stats.totalGanado}
+                      {formatNumberToCurrency(stats.totalGanado)}
                     </Typography>
                   </Box>
                   <Box>
                     <Typography variant="caption" color="text.secondary">
                       Vendido
                     </Typography>
-                    <Typography variant="h6">${stats.totalVendido}</Typography>
+                    <Typography variant="h6">
+                      {formatNumberToCurrency(stats.totalVendido)}
+                    </Typography>
                   </Box>
                   <Box>
                     <Typography variant="caption" color="text.secondary">
@@ -439,7 +442,7 @@ export default function DashboardPage() {
                       Gastos de publicidad
                     </Typography>
                     <Typography variant="h6">
-                      ${stats.gastosPublicidad || 0}
+                      {formatNumberToCurrency(stats.gastosPublicidad)}
                     </Typography>
                   </Box>
                 </Stack>
