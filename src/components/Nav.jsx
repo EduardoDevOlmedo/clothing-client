@@ -32,6 +32,7 @@ export default function Nav({ onNewDrop }) {
   return (
     <AppBar position="static" color="default" elevation={1}>
       <Toolbar>
+        <img src="/assets/anemona.ico" alt="Anemona" style={{ width: 32, height: 32, marginRight: 8, borderRadius: '50%' }} />
         <Typography variant="h6" sx={{ flexGrow: 1, fontWeight: 700, textTransform: 'uppercase' }}>
           {user?.storeName + ' CLOTHES'}
         </Typography>
