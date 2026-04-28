@@ -51,12 +51,7 @@ const TIPOS = [
 const ESTADOS_FISICO = ["nuevo", "usado", "con detalle"];
 const ESTADOS_VENTA = ["disponible", "vendido", "reservado"];
 
-const DROP_FIELDS = [
-  "nombre",
-  "descripcion",
-  "fechaPublicacion",
-  "gastosPublicidad",
-];
+const DROP_FIELDS = ["gastosPublicidad"];
 const PRENDA_FIELDS = [
   "nombre",
   "tipo",
@@ -479,6 +474,33 @@ export default function DashboardPage() {
                       dropDraft.fechaPublicacion + "T12:00:00",
                     ).toLocaleDateString()}
                   </Typography>
+                </CardContent>
+              </Card>
+              <Card sx={{ flex: 1 }}>
+                <CardContent>
+                  <TextField
+                    label="Gastos de publicidad"
+                    type="number"
+                    size="small"
+                    value={dropDraft.gastosPublicidad ?? ""}
+                    onChange={(e) => {
+                      const value = Number(e.target.value);
+
+                      if (value < 0) {
+                        setToast({
+                          severity: "error",
+                          msg: "El gasto de publicidad no puede ser negativo",
+                        });
+                        return;
+                      }
+
+                      setDropDraft({
+                        ...dropDraft,
+                        gastosPublicidad: value,
+                      });
+                    }}
+                    fullWidth
+                  />
                 </CardContent>
               </Card>
             </Stack>
