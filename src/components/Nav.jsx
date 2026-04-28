@@ -8,6 +8,7 @@ import LogoutIcon from '@mui/icons-material/Logout';
 import MenuIcon from '@mui/icons-material/Menu';
 import { useNavigate } from 'react-router-dom';
 import { getUser, logout } from '../auth.js';
+import anemonaIcon from '../../assets/anemona.ico';
 
 export default function Nav({ onNewDrop }) {
   const user = getUser();
@@ -32,7 +33,7 @@ export default function Nav({ onNewDrop }) {
   return (
     <AppBar position="static" color="default" elevation={1}>
       <Toolbar>
-        <img src="/assets/anemona.ico" alt="Anemona" style={{ width: 32, height: 32, marginRight: 8, borderRadius: '50%' }} />
+        <img src={anemonaIcon} alt="Anemona" style={{ width: 32, height: 32, marginRight: 8, borderRadius: '50%' }} />
         <Typography variant="h6" sx={{ flexGrow: 1, fontWeight: 700, textTransform: 'uppercase' }}>
           {user?.storeName + ' CLOTHES'}
         </Typography>
